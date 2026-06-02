@@ -1,0 +1,39 @@
+name: Klatchkin Podcast Agent
+
+on:
+  schedule:
+    # ⏱️ השרת יתעורר בכל יום בשעה 12:00 בצהריים שעון ישראל
+    # (שעון קיץ בישראל הוא UTC+3, ולכן 09:00 UTC זה בדיוק 12:00 בצהריים)
+    - cron: '0 9 * * *'
+  workflow_dispatch: # מאפשר לנו להריץ ידנית מתי שבא לנו בלחיצת כפתור באתר
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install feedparser requests google-genai python-dotenv
+
+    - name: Run Podcast Agent
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: python podcast_agent.py
+
+    - name: Keep History File Updated
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Automated update: update last processed episode history"
+        file_pattern: 'last_processed.txt'
