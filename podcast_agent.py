@@ -121,8 +121,13 @@ if __name__ == "__main__":
                 try:
                     raw_result = analyze_audio_with_gemini(file_path, latest['title'])
                     
+                    # השינוי החדש נמצא כאן:
                     if "NO_RECOMMENDATIONS" in raw_result:
-                        print("\nלא נמצאו המלצות תרבותיות בפרק זה. לא נשלחה הודעה.")
+                        print(f"\nלא נמצאו המלצות תרבותיות בפרק: {latest['title']}. שולח עדכון לטלגרם...")
+                        telegram_text = f"🎙️ *עדכון מהפודקאסט של קלצ'קין*\n\n"
+                        telegram_text += f"📌 *שם הפרק:* {latest['title']}\n\n"
+                        telegram_text += "אין סיכום לפרק הזה (לא נמצאו המלצות תרבותיות)."
+                        send_telegram_message(telegram_text)
                     else:
                         telegram_text = f"🎙️ *המלצות תרבות מהפרק של קלצ'קין!*\n"
                         telegram_text += f"📌 *שם הפרק:* {latest['title']}\n\n"
