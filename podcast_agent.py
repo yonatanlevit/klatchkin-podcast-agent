@@ -67,11 +67,20 @@ def download_episode(audio_url):
 
 def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{tele_token}/sendMessage"
+    
+    # ניסיון ראשון: שליחה עם עיצוב (Markdown)
     payload = {"chat_id": tele_chat_id, "text": text, "parse_mode": "Markdown"}
     try:
         response = requests.post(url, json=payload)
         if response.status_code != 200:
-            print(f"שגיאה בשליחה לטלגרם: {response.text}")
+            print(f"העיצוב נשבר, מנסה לשלוח כטקסט רגיל... (שגיאה: {response.text})")
+            
+            # ניסיון שני: גיבוי - שליחה ללא עיצוב
+            fallback_payload = {"chat_id": tele_chat_id, "text": text}
+            fallback_response = requests.post(url, json=fallback_payload)
+            
+            if fallback_response.status_code != 200:
+                print(f"שגיאה מוחלטת בשליחה לטלגרם: {fallback_response.text}")
     except Exception as e:
         print(f"שגיאה בחיבור ל-API של טלגרם: {e}")
 
