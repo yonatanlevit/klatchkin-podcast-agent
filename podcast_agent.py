@@ -68,14 +68,18 @@ def download_episode(audio_url):
 def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{tele_token}/sendMessage"
     
-    # ניסיון ראשון: שליחה עם עיצוב יציב (HTML)
-    payload = {"chat_id": tele_chat_id, "text": text, "parse_mode": "HTML"}
+    # 🧼 סניטציה: החלפת תגיות אינטרנט שג'מיני עלול להמציא, בירידות שורה שטלגרם מבינה
+    clean_text = text.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+    clean_text = clean_text.replace("<p>", "").replace("</p>", "\n")
+    
+    # ניסיון ראשון: שליחה עם העיצוב הנקי ב-HTML
+    payload = {"chat_id": tele_chat_id, "text": clean_text, "parse_mode": "HTML"}
     try:
         response = requests.post(url, json=payload)
         if response.status_code != 200:
             print(f"העיצוב נשבר, מנסה לשלוח כטקסט רגיל... (שגיאה: {response.text})")
             
-            # ניסיון שני: גיבוי - שליחה ללא עיצוב
+            # ניסיון שני: גיבוי מוחלט - שליחה ללא עיצוב בכלל
             fallback_payload = {"chat_id": tele_chat_id, "text": text}
             fallback_response = requests.post(url, json=fallback_payload)
             
@@ -110,9 +114,10 @@ def analyze_audio_with_gemini(file_path, episode_title):
     אם ורק אם אין בפרק הזה אף המלצה תרבותית אקטיבית לקהל, כתוב בשורה הראשונה של תשובתך בדיוק את המילה: "NO_RECOMMENDATIONS".
     אם יש המלצות, אל תכתוב את המילה הזו, אלא פשוט תציג את רשימת ההמלצות בעברית קריאה.
 
-    חשוב מאוד - עיצוב הטקסט בתשובה שלך חייב להיות ב-HTML בסיסי בלבד.
-    השתמש בתגיות <b> עבור טקסט מודגש, ו-<i> עבור טקסט נטוי.
-    אל תשתמש בשום אופן בכוכביות (**) או בסולמיות (#).
+    חשוב מאוד - עיצוב הטקסט בתשובה שלך חייב להיות ב-HTML בסיסי בלבד שמיועד לטלגרם.
+    - השתמש בתגיות <b> עבור טקסט מודגש, ו-<i> עבור טקסט נטוי.
+    - אל תשתמש בשום אופן בכוכביות (**) או בסולמיות (#).
+    - אל תשתמש בתגיות <br> או <p>! עבור ירידת שורה, פשוט רד שורה בטקסט כרגיל (Enter).
     """
     
     response = client.models.generate_content(model="gemini-2.5-flash", contents=[audio_file, prompt])
@@ -150,6 +155,11 @@ if __name__ == "__main__":
                     
                     # שומרים בזיכרון כדי שלא ירוץ שוב מחר בטעות על אותו פרק
                     save_to_history(latest['title'])
+
+                    # מחיקת קובץ השמע המקומי בסיום העבודה
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        print("קובץ השמע המקומי נמחק בהצלחה ולא תופס מקום!")
                     
                 except Exception as e:
                     print(f"שגיאה בתהליך הניתוח: {e}")
