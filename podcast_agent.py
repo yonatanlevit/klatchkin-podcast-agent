@@ -68,8 +68,8 @@ def download_episode(audio_url):
 def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{tele_token}/sendMessage"
     
-    # ניסיון ראשון: שליחה עם עיצוב (Markdown)
-    payload = {"chat_id": tele_chat_id, "text": text, "parse_mode": "Markdown"}
+    # ניסיון ראשון: שליחה עם עיצוב יציב (HTML)
+    payload = {"chat_id": tele_chat_id, "text": text, "parse_mode": "HTML"}
     try:
         response = requests.post(url, json=payload)
         if response.status_code != 200:
@@ -108,7 +108,11 @@ def analyze_audio_with_gemini(file_path, episode_title):
     - מי המליץ ולמה (הקשר קצר מהשיחה, מה הם אהבו בזה)
     
     אם ורק אם אין בפרק הזה אף המלצה תרבותית אקטיבית לקהל, כתוב בשורה הראשונה של תשובתך בדיוק את המילה: "NO_RECOMMENDATIONS".
-    אם יש המלצות, אל תכתוב את המילה הזו, אלא פשוט תציג את רשימת ההמלצות בעברית קריאה ומעוצבת יפה עם בולטים והדגשות.
+    אם יש המלצות, אל תכתוב את המילה הזו, אלא פשוט תציג את רשימת ההמלצות בעברית קריאה.
+
+    חשוב מאוד - עיצוב הטקסט בתשובה שלך חייב להיות ב-HTML בסיסי בלבד.
+    השתמש בתגיות <b> עבור טקסט מודגש, ו-<i> עבור טקסט נטוי.
+    אל תשתמש בשום אופן בכוכביות (**) או בסולמיות (#).
     """
     
     response = client.models.generate_content(model="gemini-2.5-flash", contents=[audio_file, prompt])
@@ -130,16 +134,16 @@ if __name__ == "__main__":
                 try:
                     raw_result = analyze_audio_with_gemini(file_path, latest['title'])
                     
-                    # השינוי החדש נמצא כאן:
+                    # בניית ההודעה ב-HTML במקום ב-Markdown
                     if "NO_RECOMMENDATIONS" in raw_result:
                         print(f"\nלא נמצאו המלצות תרבותיות בפרק: {latest['title']}. שולח עדכון לטלגרם...")
-                        telegram_text = f"🎙️ *עדכון מהפודקאסט של קלצ'קין*\n\n"
-                        telegram_text += f"📌 *שם הפרק:* {latest['title']}\n\n"
+                        telegram_text = f"🎙️ <b>עדכון מהפודקאסט של קלצ'קין</b>\n\n"
+                        telegram_text += f"📌 <b>שם הפרק:</b> {latest['title']}\n\n"
                         telegram_text += "אין סיכום לפרק הזה (לא נמצאו המלצות תרבותיות)."
                         send_telegram_message(telegram_text)
                     else:
-                        telegram_text = f"🎙️ *המלצות תרבות מהפרק של קלצ'קין!*\n"
-                        telegram_text += f"📌 *שם הפרק:* {latest['title']}\n\n"
+                        telegram_text = f"🎙️ <b>המלצות תרבות מהפרק של קלצ'קין!</b>\n"
+                        telegram_text += f"📌 <b>שם הפרק:</b> {latest['title']}\n\n"
                         telegram_text += raw_result
                         send_telegram_message(telegram_text)
                         print("ההמלצות נשלחו לטלגרם!")
