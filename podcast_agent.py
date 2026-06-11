@@ -101,16 +101,16 @@ def analyze_audio_with_gemini(file_path, episode_title):
         raise ValueError("עיבוד הקובץ נכשל בשרתי גוגל.")
         
     print("הקובץ מוכן! Gemini-Flash מתחיל לחלץ המלצות...")
-    
+
     prompt = f"""
     אתה עוזר מחקר תרבותי חכם. הקשב היטב לפרק בשם "{episode_title}" מתוך הפודקאסט בעברית "ברדיו עם קלצ'קין".
     המנחה והאורחים ממליצים לעיתים קרובות על יצירות תרבות (ספר, סרט, סדרה, אלבום מוזיקה).
-    
+
     עבור כל המלצה אקטיבית, חלץ בצורה מסודרת:
     - סוג המדיה (ספר / סרט / סדרה / אלבום מוזיקה / אחר)
     - שם היצירה והשם של היוצר
     - מי המליץ ולמה (הקשר קצר מהשיחה, מה הם אהבו בזה)
-    
+
     אם ורק אם אין בפרק הזה אף המלצה תרבותית אקטיבית לקהל, כתוב בשורה הראשונה של תשובתך בדיוק את המילה: "NO_RECOMMENDATIONS".
     אם יש המלצות, אל תכתוב את המילה הזו, אלא פשוט תציג את רשימת ההמלצות בעברית קריאה.
 
@@ -119,8 +119,19 @@ def analyze_audio_with_gemini(file_path, episode_title):
     - אל תשתמש בשום אופן בכוכביות (**) או בסולמיות (#).
     - אל תשתמש בתגיות <br> או <p>! עבור ירידת שורה, פשוט רד שורה בטקסט כרגיל (Enter).
     """
-    
-    response = client.models.generate_content(model="gemini-2.5-flash", contents=[audio_file, prompt])
+
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(model="gemini-2.5-flash", contents=[audio_file, prompt])
+            break
+        except Exception as e:
+            if attempt < max_retries - 1 and ("503" in str(e) or "UNAVAILABLE" in str(e) or "429" in str(e)):
+                wait = 30 * (2 ** attempt)
+                print(f"Gemini עמוסה, ממתין {wait} שניות לפני ניסיון {attempt + 2}/{max_retries}...")
+                time.sleep(wait)
+            else:
+                raise
     print("מנקה את קובץ השמע משרתי גוגל...")
     client.files.delete(name=audio_file.name)
     return response.text
