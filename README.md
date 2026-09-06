@@ -27,7 +27,7 @@ RSS feed  →  download MP3  →  upload to Gemini  →  extract recommendations
 - A Telegram bot token (from [@BotFather](https://t.me/BotFather)) and the target chat ID
 
 ```bash
-pip install feedparser requests google-genai python-dotenv
+pip install -r requirements.txt
 ```
 
 ## Configuration
@@ -67,6 +67,7 @@ After each run the workflow commits any change to `last_processed.txt` back to t
 | File | Purpose |
 | --- | --- |
 | `podcast_agent.py` | The entire agent: fetch, download, analyze, send. |
+| `requirements.txt` | Python dependencies, used both locally and by CI. |
 | `last_processed.txt` | Title of the last episode processed — the agent's memory. Committed by CI. |
 | `.github/workflows/run_agent.yml` | Daily schedule and manual trigger. |
 | `podcast_episodes/` | Temporary download folder (gitignored, emptied after each run). |
